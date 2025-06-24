@@ -23,6 +23,18 @@ df = load_data()
 
 st.title("📊 Análise Demográfica")
 
+min_valor = float(df["Age"].min())
+max_valor = float(df["Age"].max())
+limiar = st.sidebar.slider(
+    f"Limiar de idade:",
+    min_valor, max_valor,
+    (min_valor, max_valor)
+)
+
+df_filtrado = df[(df["Age"] >= limiar[0]) & 
+                          (df["Age"] <= limiar[1])]
+
+
 if df is not None:
     st.header('Distribuição por Idade')
     col1, col2 = st.columns(2)
@@ -51,7 +63,7 @@ if df is not None:
     col1, col2 = st.columns(2)
     with col1:
         fig_gender_count = px.histogram(
-            df,
+            df_filtrado,
             x='Gender',
             color='Diagnosis',
             barmode='group',
@@ -61,7 +73,7 @@ if df is not None:
         st.plotly_chart(fig_gender_count, use_container_width=True)
     with col2:
         fig_gender_prop = px.histogram(
-            df,
+            df_filtrado,
             x='Gender',
             color='Diagnosis',
             barnorm='percent',
@@ -75,7 +87,7 @@ if df is not None:
     col1, col2 = st.columns(2)
     with col1:
         fig_ethnicity_count = px.histogram(
-            df,
+            df_filtrado,
             x='Ethnicity',
             color='Diagnosis',
             barmode='group',
@@ -85,7 +97,7 @@ if df is not None:
         st.plotly_chart(fig_ethnicity_count, use_container_width=True)
     with col2:
         fig_ethnicity_prop = px.histogram(
-            df,
+            df_filtrado,
             x='Ethnicity',
             color='Diagnosis',
             barnorm='percent',
@@ -100,7 +112,7 @@ if df is not None:
     col1, col2 = st.columns(2)
     with col1:
         fig_education_count = px.histogram(
-            df,
+            df_filtrado,
             x='EducationLevel',
             color='Diagnosis',
             barmode='group',
@@ -111,7 +123,7 @@ if df is not None:
         st.plotly_chart(fig_education_count, use_container_width=True)
     with col2:
         fig_education_prop = px.histogram(
-            df,
+            df_filtrado,
             x='EducationLevel',
             color='Diagnosis',
             barnorm='percent',

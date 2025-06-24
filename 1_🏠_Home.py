@@ -26,7 +26,7 @@ df = load_data()
 # --- Main App Logic ---
 if df is not None:
     # --- Introduction and Data Display ---
-    st.header('Visão Geral do Conjunto de Dados')
+    st.header('Visão Geral do Conjunto de Dados!')
     st.write("Abaixo estão as primeiras 5 linhas do conjunto de dados.")
     st.dataframe(df.head())
 

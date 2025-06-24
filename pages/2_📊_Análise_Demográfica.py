@@ -31,13 +31,17 @@ limiar = st.sidebar.slider(
     (min_valor, max_valor)
 )
 
-df_filtrado = df[(df["Age"] >= limiar[0]) & 
-                          (df["Age"] <= limiar[1])]
 
 
 if df is not None:
     st.header('Distribuição por Idade')
     col1, col2 = st.columns(2)
+    df["Ethnicity"] = df["Ethnicity"].map({0:"Caucasian", 1:"African American", 2: "Asian", 3: "Other"})
+    df["Gender"] = df["Gender"].map({0:"Homem", 1:"Mulher"})
+    df["EducationLevel"] = df["EducationLevel"].map({0:"Nenhum", 1:"Ensino médio", 2: "Bacharelado", 3: "Pós"})
+
+    df_filtrado = df[(df["Age"] >= limiar[0]) & 
+                          (df["Age"] <= limiar[1])]
     with col1:
         fig_age_box = px.box(
             df,

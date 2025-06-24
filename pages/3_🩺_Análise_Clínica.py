@@ -25,6 +25,7 @@ st.title("🩺 Análise Clínica e de Comorbidades")
 if df is not None:
     st.header('Análise de Relações Clínicas')
     
+
     fig_mmse_age_scatter = px.scatter(
         df,
         x='MMSE',

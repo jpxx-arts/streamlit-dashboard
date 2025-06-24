@@ -2,38 +2,29 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# Define a configuração da página, título e ícone
 st.set_page_config(
     page_title="Análise Clínica",
     page_icon="🩺",
     layout="wide"
 )
 
-# --- Função de Carregamento de Dados ---
 @st.cache_data
 def load_data():
-    """Carrega o dataset de Alzheimer a partir de um arquivo CSV e remove colunas desnecessárias."""
     try:
-        # Tenta carregar os dados do arquivo CSV
         df = pd.read_csv('alzheimers_disease_data.csv')
-        # Remove colunas que não serão utilizadas na análise
         df.drop(columns=["PatientID", "DoctorInCharge"], inplace=True)
         return df
     except FileNotFoundError:
-        # Exibe uma mensagem de erro se o arquivo não for encontrado
-        st.error("Erro: 'alzheimers_disease_data.csv' não encontrado. Por favor, certifique-se de que o arquivo está no mesmo diretório que o app.py.")
+        st.error("'alzheimers_disease_data.csv' não encontrado")
         return None
 
 df = load_data()
 
-# Título principal do aplicativo
 st.title("🩺 Análise Clínica e de Comorbidades")
 
 if df is not None:
-    # --- Scatter Plots de Relações ---
     st.header('Análise de Relações Clínicas')
     
-    # MMSE vs. Idade
     fig_mmse_age_scatter = px.scatter(
         df,
         x='MMSE',
@@ -45,7 +36,6 @@ if df is not None:
     )
     st.plotly_chart(fig_mmse_age_scatter, use_container_width=True)
 
-    # ADL vs. Avaliação Funcional
     fig_adl_functional_scatter = px.scatter(
         df,
         x='FunctionalAssessment',
@@ -57,10 +47,8 @@ if df is not None:
     )
     st.plotly_chart(fig_adl_functional_scatter, use_container_width=True)
 
-    # --- Análise de Depressão e Lesão na Cabeça ---
     st.header('Análise de Comorbidades')
     
-    # Análise de Depressão
     st.subheader('Depressão')
     col1, col2 = st.columns(2)
     with col1:
@@ -85,7 +73,6 @@ if df is not None:
         )
         st.plotly_chart(fig_depression_prop, use_container_width=True)
 
-    # Análise de Lesão na Cabeça
     st.subheader('Histórico de Lesão na Cabeça')
     col1, col2 = st.columns(2)
     with col1:

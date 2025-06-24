@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
-import altair as alt
+import plotly.express as px
 
+# Define a configuração da página, título e ícone
 st.set_page_config(
     page_title="Análise Clínica",
     page_icon="🩺",
@@ -11,40 +12,50 @@ st.set_page_config(
 # --- Função de Carregamento de Dados ---
 @st.cache_data
 def load_data():
-    """Carrega o dataset de Alzheimer a partir de um arquivo CSV."""
+    """Carrega o dataset de Alzheimer a partir de um arquivo CSV e remove colunas desnecessárias."""
     try:
+        # Tenta carregar os dados do arquivo CSV
         df = pd.read_csv('alzheimers_disease_data.csv')
+        # Remove colunas que não serão utilizadas na análise
         df.drop(columns=["PatientID", "DoctorInCharge"], inplace=True)
         return df
     except FileNotFoundError:
-        st.error("Erro: 'alzheimers_disease_data.csv' não encontrado.")
+        # Exibe uma mensagem de erro se o arquivo não for encontrado
+        st.error("Erro: 'alzheimers_disease_data.csv' não encontrado. Por favor, certifique-se de que o arquivo está no mesmo diretório que o app.py.")
         return None
 
 df = load_data()
 
+# Título principal do aplicativo
 st.title("🩺 Análise Clínica e de Comorbidades")
 
 if df is not None:
     # --- Scatter Plots de Relações ---
     st.header('Análise de Relações Clínicas')
     
-    # MMSE vs. Age
-    mmse_age_scatter = alt.Chart(df).mark_circle(size=60, opacity=0.7).encode(
-        x=alt.X('MMSE:Q', title='MMSE (Mini-Exame do Estado Mental)'),
-        y=alt.Y('Age:Q', title='Idade'),
-        color=alt.Color('Diagnosis:N', legend=alt.Legend(title='Diagnóstico')),
-        tooltip=['MMSE', 'Age', 'Diagnosis']
-    ).properties(title='Relação entre MMSE e Idade').interactive()
-    st.altair_chart(mmse_age_scatter, use_container_width=True)
+    # MMSE vs. Idade
+    fig_mmse_age_scatter = px.scatter(
+        df,
+        x='MMSE',
+        y='Age',
+        color='Diagnosis',
+        hover_data=['Gender', 'EducationLevel'],
+        labels={'MMSE': 'MMSE (Mini-Exame do Estado Mental)', 'Age': 'Idade', 'Diagnosis': 'Diagnóstico'},
+        title='Relação entre MMSE e Idade'
+    )
+    st.plotly_chart(fig_mmse_age_scatter, use_container_width=True)
 
-    # ADL vs. Functional Assessment
-    adl_functional_scatter = alt.Chart(df).mark_circle(size=60, opacity=0.7).encode(
-        x=alt.X('FunctionalAssessment:Q', title='Avaliação Funcional'),
-        y=alt.Y('ADL:Q', title='ADL (Atividades da Vida Diária)'),
-        color=alt.Color('Diagnosis:N', legend=alt.Legend(title='Diagnóstico')),
-        tooltip=['FunctionalAssessment', 'ADL', 'Diagnosis']
-    ).properties(title='Relação entre ADL e Avaliação Funcional').interactive()
-    st.altair_chart(adl_functional_scatter, use_container_width=True)
+    # ADL vs. Avaliação Funcional
+    fig_adl_functional_scatter = px.scatter(
+        df,
+        x='FunctionalAssessment',
+        y='ADL',
+        color='Diagnosis',
+        hover_data=['Gender', 'EducationLevel'],
+        labels={'FunctionalAssessment': 'Avaliação Funcional', 'ADL': 'ADL (Atividades da Vida Diária)', 'Diagnosis': 'Diagnóstico'},
+        title='Relação entre ADL e Avaliação Funcional'
+    )
+    st.plotly_chart(fig_adl_functional_scatter, use_container_width=True)
 
     # --- Análise de Depressão e Lesão na Cabeça ---
     st.header('Análise de Comorbidades')
@@ -53,47 +64,77 @@ if df is not None:
     st.subheader('Depressão')
     col1, col2 = st.columns(2)
     with col1:
-        depression_count_plot = alt.Chart(df).mark_bar().encode(
-            x=alt.X('Depression:N', title='Depressão'),
-            y=alt.Y('count():Q', title='Contagem'),
-            color=alt.Color('Diagnosis:N', legend=alt.Legend(title='Diagnóstico')),
-            tooltip=['Depression', 'Diagnosis', 'count()']
-        ).properties(title='Contagem de Diagnóstico por Depressão')
-        st.altair_chart(depression_count_plot, use_container_width=True)
+        fig_depression_count = px.histogram(
+            df, 
+            x='Depression', 
+            color='Diagnosis', 
+            barmode='group',
+            title='Contagem de Diagnóstico por Depressão',
+            labels={'Depression': 'Depressão', 'count': 'Contagem', 'Diagnosis': 'Diagnóstico'}
+        )
+        st.plotly_chart(fig_depression_count, use_container_width=True)
     with col2:
-        depression_proportion_plot = alt.Chart(df).mark_bar().encode(
-            x=alt.X('Depression:N', title='Depressão'),
-            y=alt.Y('count():Q', stack='normalize', axis=alt.Axis(format='%'), title='Porcentagem'),
-            color=alt.Color('Diagnosis:N', legend=alt.Legend(title='Diagnóstico')),
-            tooltip=['Depression', 'Diagnosis']
-        ).properties(title='Proporção de Diagnóstico por Depressão')
-        st.altair_chart(depression_proportion_plot, use_container_width=True)
+        fig_depression_prop = px.histogram(
+            df, 
+            x='Depression', 
+            color='Diagnosis', 
+            barnorm='percent',
+            text_auto='.2f',
+            title='Proporção de Diagnóstico por Depressão (%)',
+            labels={'Depression': 'Depressão', 'percent': 'Porcentagem', 'Diagnosis': 'Diagnóstico'}
+        )
+        st.plotly_chart(fig_depression_prop, use_container_width=True)
 
     # Análise de Lesão na Cabeça
     st.subheader('Histórico de Lesão na Cabeça')
     col1, col2 = st.columns(2)
     with col1:
-        head_injury_count_plot = alt.Chart(df).mark_bar().encode(
-            x=alt.X('HeadInjury:N', title='Lesão na Cabeça'),
-            y=alt.Y('count():Q', title='Contagem'),
-            color=alt.Color('Diagnosis:N', legend=alt.Legend(title='Diagnóstico')),
-            tooltip=['HeadInjury', 'Diagnosis', 'count()']
-        ).properties(title='Contagem de Diagnóstico por Lesão na Cabeça')
-        st.altair_chart(head_injury_count_plot, use_container_width=True)
+        fig_head_injury_count = px.histogram(
+            df, 
+            x='HeadInjury', 
+            color='Diagnosis', 
+            barmode='group',
+            title='Contagem de Diagnóstico por Lesão na Cabeça',
+            labels={'HeadInjury': 'Lesão na Cabeça', 'count': 'Contagem', 'Diagnosis': 'Diagnóstico'}
+        )
+        st.plotly_chart(fig_head_injury_count, use_container_width=True)
     with col2:
-        head_injury_proportion_plot = alt.Chart(df).mark_bar().encode(
-            x=alt.X('HeadInjury:N', title='Lesão na Cabeça'),
-            y=alt.Y('count():Q', stack='normalize', axis=alt.Axis(format='%'), title='Porcentagem'),
-            color=alt.Color('Diagnosis:N', legend=alt.Legend(title='Diagnóstico')),
-            tooltip=['HeadInjury', 'Diagnosis']
-        ).properties(title='Proporção de Diagnóstico por Lesão na Cabeça')
-        st.altair_chart(head_injury_proportion_plot, use_container_width=True)
+        fig_head_injury_prop = px.histogram(
+            df, 
+            x='HeadInjury', 
+            color='Diagnosis', 
+            barnorm='percent',
+            text_auto='.2f',
+            title='Proporção de Diagnóstico por Lesão na Cabeça (%)',
+            labels={'HeadInjury': 'Lesão na Cabeça', 'percent': 'Porcentagem', 'Diagnosis': 'Diagnóstico'}
+        )
+        st.plotly_chart(fig_head_injury_prop, use_container_width=True)
+    
+    st.subheader('Contagem e proporção de variáveis com alta correlação')
 
-    # --- Distribuição do MMSE por Nível de Escolaridade ---
-    st.header('Distribuição do MMSE por Nível de Escolaridade')
-    mmse_education_boxplot = alt.Chart(df).mark_boxplot(extent='min-max').encode(
-        x=alt.X('EducationLevel:N', title='Nível de Escolaridade', sort=['Nenhum', 'Ensino médio', 'Bacharelado', 'Pós-graduação']),
-        y=alt.Y('MMSE:Q', title='MMSE'),
-        color=alt.Color('EducationLevel:N', legend=None)
-    ).properties(title='Distribuição do MMSE por Nível de Escolaridade')
-    st.altair_chart(mmse_education_boxplot, use_container_width=True)
+    diagnosis_classif = st.selectbox("Variáveis:", ["MMSE", "FunctionalAssessment", "MemoryComplaints", "BehavioralProblems", "ADL"])
+
+    col1, col2 = st.columns(2)
+    with col1:
+        fig_head_injury_count = px.histogram(
+            df, 
+            x=diagnosis_classif, 
+            color='Diagnosis', 
+            barmode='group',
+            title=f'Contagem de Diagnóstico por {diagnosis_classif}',
+            labels={'count': 'Contagem', 'Diagnosis': 'Diagnóstico'}
+        )
+        st.plotly_chart(fig_head_injury_count, use_container_width=True)
+    with col2:
+        fig_head_injury_prop = px.histogram(
+            df, 
+            x=diagnosis_classif, 
+            color='Diagnosis', 
+            barnorm='percent',
+            text_auto='.2f',
+            title=f'Proporção de Diagnóstico por {diagnosis_classif}',
+            labels={'percent': 'Porcentagem', 'Diagnosis': 'Diagnóstico'}
+        )
+        st.plotly_chart(fig_head_injury_prop, use_container_width=True)
+
+

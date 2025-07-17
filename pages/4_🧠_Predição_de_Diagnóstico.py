@@ -64,16 +64,13 @@ def train_classification_model(df):
             scoring='accuracy'
         )
 
-        # 4. Execute a busca. Isso pode demorar alguns minutos na primeira vez!
-        st.write("Iniciando a busca pelos melhores hiperparâmetros... Isso pode levar um momento. ⏳")
+        st.write("Iniciando a busca pelos melhores hiperparâmetros...")
         grid_search.fit(X_train, y_train)
-        st.write("Busca finalizada! O melhor modelo foi encontrado.")
+        st.write("O melhor modelo foi encontrado.")
 
-        # O melhor modelo já treinado fica em .best_estimator_
         best_model = grid_search.best_estimator_
         best_params = grid_search.best_params_
 
-        # Calcula a importância das features com o melhor modelo
         feature_importances = pd.DataFrame({
             'feature': FEATURES,
             'importance': best_model.feature_importances_

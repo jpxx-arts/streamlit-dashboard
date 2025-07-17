@@ -5,6 +5,7 @@ import plotly.express as px
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.model_selection import train_test_split, GridSearchCV
 
 st.set_page_config(
     page_title="Classificador de Alzheimer",
@@ -33,35 +34,56 @@ def load_data():
 
 @st.cache_resource
 def train_classification_model(df):
-    """Treina o modelo de classificação e retorna os componentes necessários."""
+    """
+    Usa GridSearchCV para encontrar os melhores hiperparâmetros e treinar o modelo.
+    """
     try:
         FEATURES = [col for col in df.columns if col != 'Diagnosis']
         TARGET = 'Diagnosis'
 
         X = df[FEATURES]
         y = df[TARGET]
-        
-        if not np.all(y.isin([0, 1])):
-            st.error("A coluna 'Diagnosis' não é binária (0 ou 1). Por favor, verifique o dataset.")
-            return None, None, None, None, None
 
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.25, random_state=42, stratify=y
         )
 
-        model = RandomForestClassifier(n_estimators=150, random_state=42, n_jobs=-1)
-        model.fit(X_train, y_train)
+        param_grid = {
+            'n_estimators': [100, 150, 200],
+            'max_depth': [10, 20, None], # None = sem limite de profundidade
+            'min_samples_split': [2, 5]
+        }
 
+        rf = RandomForestClassifier(random_state=42)
+
+        grid_search = GridSearchCV(
+            estimator=rf,
+            param_grid=param_grid,
+            cv=3,
+            n_jobs=-1,
+            scoring='accuracy'
+        )
+
+        # 4. Execute a busca. Isso pode demorar alguns minutos na primeira vez!
+        st.write("Iniciando a busca pelos melhores hiperparâmetros... Isso pode levar um momento. ⏳")
+        grid_search.fit(X_train, y_train)
+        st.write("Busca finalizada! O melhor modelo foi encontrado.")
+
+        # O melhor modelo já treinado fica em .best_estimator_
+        best_model = grid_search.best_estimator_
+        best_params = grid_search.best_params_
+
+        # Calcula a importância das features com o melhor modelo
         feature_importances = pd.DataFrame({
             'feature': FEATURES,
-            'importance': model.feature_importances_
+            'importance': best_model.feature_importances_
         }).sort_values('importance', ascending=False)
 
-        return model, X_test, y_test, FEATURES, feature_importances
+        return best_model, X_test, y_test, FEATURES, feature_importances, best_params
 
     except KeyError as e:
-        st.error(f"Erro: A coluna {e} não foi encontrada no seu dataset. Verifique os nomes das colunas no arquivo .csv.")
-        return None, None, None, None, None
+        st.error(f"Erro: A coluna {e} não foi encontrada no seu dataset.")
+        return None, None, None, None, None, None
 
 
 st.title("🧠 Classificador de Doença de Alzheimer")
@@ -73,7 +95,7 @@ if df_data is not None:
     model_components = train_classification_model(df_data)
     
     if model_components and all(comp is not None for comp in model_components):
-        model, X_test, y_test, FEATURES, feature_importances = model_components
+        model, X_test, y_test, FEATURES, feature_importances, best_params = model_components 
 
         st.sidebar.header("Insira os Dados do Paciente")
         input_data = {}
@@ -149,3 +171,6 @@ if df_data is not None:
                              title='Top 15 Variáveis Mais Importantes')
             fig_imp.update_layout(yaxis={'categoryorder':'total ascending'})
             st.plotly_chart(fig_imp)
+
+            st.subheader("Melhores Hiperparâmetros Encontrados")
+            st.json(best_params)
